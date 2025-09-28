@@ -1,5 +1,7 @@
 # Balkan Kombat
 This is my second silly game I have ever made. It's a political incorrect and AGAIN a really dumb game.
+This magnificient relaxing THING was created in Python (now you can laugh on me 🤣).
+
 ## General description
 Currently you can play only in Multiplayer mode (becaues I'm too lasy to do single mode). It's a 2D game however the graphical stuffs aren't mine I stole them....
 
