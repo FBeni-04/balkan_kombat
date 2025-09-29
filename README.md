@@ -13,4 +13,9 @@ Also each players have 5-5 HP in each rounds and in the end of third round the w
 ![Sample Image](./fancy_intro.png)
 
 
+## New information
+> [!NOTE]  
+> Finally I created single player mode
+
+
 
