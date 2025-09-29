@@ -1,5 +1,4 @@
 import Global
-import random
 import pygame
 class CountryBall:
     def __init__(self, name, index):
