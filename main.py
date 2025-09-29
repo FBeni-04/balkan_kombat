@@ -5,9 +5,78 @@ import Global
 import random
 from random import choice
 from CountryBall import CountryBall
+from pathlib import Path
+import unicodedata
+import os
 
 def normalize_filename(name):
     return name.lower().replace(" ", "_")
+
+
+# --- Kép indexelés: bárhogy nevezett fájlt megtalálunk ---
+def _simplify_key(s: str) -> str:
+    # ékezetek kiszedése + kisbetű + szóköz/kötőjel/alávonás/pont/aposztróf eldobása
+    s_norm = unicodedata.normalize('NFKD', s)
+    s_ascii = ''.join(ch for ch in s_norm if not unicodedata.combining(ch))
+    s_ascii = s_ascii.lower()
+    for ch in [' ', '_', '-', '.', "'"]:
+        s_ascii = s_ascii.replace(ch, '')
+    return s_ascii
+
+IMAGE_DIR = Path('./images')
+IMAGE_INDEX: dict[str, Path] = {}
+
+def _build_image_index():
+    IMAGE_INDEX.clear()
+    if not IMAGE_DIR.exists():
+        print(f"[WARN] Képmappa nem létezik: {IMAGE_DIR.resolve()}")
+        return
+    for p in IMAGE_DIR.iterdir():
+        if p.is_file() and p.suffix.lower() in {'.png', '.jpg', '.jpeg', '.bmp', '.gif'}:
+            key = _simplify_key(p.stem)
+            # Ha duplikált kulcs lenne, ne írjuk felül vakon — de itt az első nyer
+            IMAGE_INDEX.setdefault(key, p)
+
+_build_image_index()
+
+def load_image_smart(name: str, size=(100, 100)) -> pygame.Surface:
+    """
+    Bárhogy írt 'name' alapján megpróbáljuk megtalálni a fájlt a ./images mappában.
+    Ha nincs találat, helyettesítő (placeholder) felületet ad vissza.
+    """
+    key = _simplify_key(name)
+    path = IMAGE_INDEX.get(key)
+
+    # Extra esély: néha a kiterjesztés nélkül mentett logók több variánssal léteznek
+    if path is None:
+        # próbáljuk meg közvetlenül az eredeti nevet is (szóközökkel)
+        raw = IMAGE_DIR / f"{name}.png"
+        if raw.exists():
+            path = raw
+
+    if path and path.exists():
+        try:
+            img = pygame.image.load(str(path)).convert_alpha()
+            if size:
+                img = pygame.transform.scale(img, size)
+            return img
+        except Exception as e:
+            print(f"[ERR] Nem sikerült betölteni: {path} -> {e}")
+
+    # --- Placeholder, ha nincs kép ---
+    w, h = size
+    surf = pygame.Surface((w, h), pygame.SRCALPHA)
+    pygame.draw.rect(surf, (80, 80, 80), surf.get_rect(), width=3)
+    # rövid felirat középre, hogy lásd, mi hiányzik
+    try:
+        fnt = pygame.font.SysFont("Arial", 16)
+        txt = fnt.render(name[:12], True, (200, 200, 200))
+        surf.blit(txt, ( (w - txt.get_width())//2, (h - txt.get_height())//2 ))
+    except:
+        pass
+    print(f"[WARN] Kép nem található: '{name}' (kulcs: '{key}')")
+    return surf
+
 
 
 countries = [
@@ -260,13 +329,10 @@ def start_game(player1_country, player2_country):
     font = pygame.font.SysFont("Arial", 36)
     title_font = pygame.font.SysFont("Arial", 48)
 
-    def load_image(name):
-        filename = normalize_filename(name)
-        img = pygame.image.load(f"./images/{filename}.png").convert_alpha()
-        return pygame.transform.scale(img, (100, 100))
 
-    img1 = load_image(player1_country)
-    img2 = load_image(player2_country)
+    img1 = load_image_smart(player1_country, size=(100, 100))
+    img2 = load_image_smart(player2_country, size=(100, 100))
+
 
     ground_y = height - 150
     p1_x, p1_y = 150, ground_y
@@ -366,7 +432,7 @@ def start_game(player1_country, player2_country):
                     weapon = choice(p2_weapons)
                     damage = random.randint(2, 4) if weapon == weaknesses[player1_country] else random.randint(1, 2)
                     try:
-                        img = load_image(weapon)
+                        img = load_image_smart(weapon, size=(50, 50))
                         projectiles.append([img, p2_x, p2_y, -1, (p1_x, p1_y, 'p1', damage)])
                     except:
                         pass
@@ -375,7 +441,7 @@ def start_game(player1_country, player2_country):
                     weapon = choice(p1_weapons)
                     damage = random.randint(2, 4) if weapon == weaknesses[player2_country] else random.randint(1, 2)
                     try:
-                        img = load_image(weapon)
+                        img = load_image_smart(weapon, size=(50, 50))
                         projectiles.append([img, p1_x + 50, p1_y, 1, (p2_x, p2_y, 'p2', damage)])
                     except:
                         pass
