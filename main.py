@@ -124,7 +124,7 @@ weapon_data = {
     },
     "Bulgária": {
         "item": "Focilabda",
-        "person": "Vasil Levski"
+        "person": "Vaszil Levszki"
     },
     "Horvátország": {
         "item": "Cevapcici",
@@ -331,6 +331,9 @@ def select_countries(mode="multi"):
     return selected
 
 
+
+
+
 def start_game(mode, player1_country, player2_country):
     width, height = Global.WIDTH, Global.HEIGHT
     screen = pygame.display.set_mode((width, height))
@@ -387,13 +390,6 @@ def start_game(mode, player1_country, player2_country):
         if template:
             round_win_surface = font.render(template, True, (255, 255, 255))
             screen.blit(round_win_surface, (width // 2 - round_win_surface.get_width() // 2, height - 160))
-
-        if winner_text:
-            winner_surface = title_font.render(winner_text, True, (255, 255, 0))
-            screen.blit(winner_surface, (width // 2 - winner_surface.get_width() // 2, height - 100))
-            end_timer += 1
-            if end_timer > 180:
-                return  # vissza a hívóhoz (menühöz a főágban)
 
         # --- Játékos 1 irányítás ---
         keys = pygame.key.get_pressed()
@@ -494,11 +490,12 @@ def start_game(mode, player1_country, player2_country):
         # --- Kör/győzelem logika ---
         if (hp1 <= 0 or hp2 <= 0) and not winner_text:
             if hp1 <= 0 < hp2:
-                rw2 += 1; template = f"{player2_country} megnyerte a(z) {current_round}. kört!"
+                    rw2 += 1; template = f"{player2_country} megnyerte a(z) {current_round}. kört!"
             elif hp2 <= 0 < hp1:
-                rw1 += 1; template = f"{player1_country} megnyerte a(z) {current_round}. kört!"
+                    rw1 += 1; template = f"{player1_country} megnyerte a(z) {current_round}. kört!"
             else:
-                rw1 += 0.5; rw2 += 0.5; template = f"Döntetlen a(z) {current_round}. körben!"
+                    rw1 += 0.5; rw2 += 0.5; template = f"Döntetlen a(z) {current_round}. körben!"
+            
             current_round += 1
 
             if current_round > rounds:
@@ -509,6 +506,22 @@ def start_game(mode, player1_country, player2_country):
                     winner_text = f"{player2_country} nyert! ({rw2}:{rw1})"
                 else:
                     winner_text = f"Döntetlen! ({rw1}:{rw2})"
+
+                screen.fill((0, 0, 0))  # előző képernyő törlése (sztornózás)
+                font = pygame.font.Font(None, 74)
+                text_surface = font.render(winner_text, True, (255, 255, 255))
+                text_rect = text_surface.get_rect(center=(screen.get_width()//2, screen.get_height()//2))
+                screen.blit(text_surface, text_rect)
+                pygame.display.flip()
+
+                # --- kis várakozás ---
+                pygame.time.wait(2000)
+
+                # --- vissza a menübe ---
+                pygame.event.clear()
+                return
+
+       
             else:
                 pygame.time.wait(1000)
                 hp1 = 5; hp2 = 5; template = ""
@@ -525,6 +538,7 @@ pygame.event.clear()
 pygame.mixer.music.load("dubioza.ogg")
 pygame.mixer.music.play(-1, start=14.0)
 show_intro()
-mode = show_menu()
-selected_countries = select_countries(mode=mode)
-start_game(mode, selected_countries[0], selected_countries[1])
+while True:
+    mode = show_menu()
+    selected_countries = select_countries(mode=mode)
+    start_game(mode, selected_countries[0], selected_countries[1])
